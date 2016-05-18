@@ -126,14 +126,14 @@ for(i in 1:4) {
 }
 
 # plot
-jpeg('bundestag_agreement_time.jpg', width = 400, height = 350, units='px')
+jpeg('bundestag_agreement_time.jpg', width = 800, height = 700, units='px')
 plot.new()
 par(mar=c(8,6,1,1))
 plot.window(ylim=c(-.2, 1), xlim=c(1,time_vec))
 box()
 for(i in 1:4) lines(t_parties[[i]], col=colors[i], lwd=5)
 lines(t_all, lwd=3, lty=2)
-legend(3,.2, c(parties, 'All'), col=c(colors, 'black'), lty = c(1,1,1,1,2), lwd=rep(5,5), cex=1.5)
+legend(3,.2, c(parties, 'All'), col=c(colors[c(3,2,1,4)], 'black'), lty = c(1,1,1,1,2), lwd=rep(5,5), cex=1.5)
 axis(1, 1:time_vec, date_vec, las=2, cex.axis=1.4)
 axis(2, round(seq(-.2, 1, length=13), 2), las=2, cex.axis=1.4)
 title(ylab='Mean Correlation', cex.lab=1.6, line=4)
