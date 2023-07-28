@@ -1,13 +1,14 @@
+# jonashaslbeck@protonmail.com; July 28th, 2023
+
+# -------------- Source & Loading Packages --------------
+
 library(qgraph)
 library(mgm)
 library(plyr)
-
-setwd("/Users/jmb/Dropbox/MyData/_PhD/_Blogposts/18_bundestag")
 source('bundestag_aux_functions.R')
 
 # -------------- Load Data --------------
 
-setwd("/Users/jmb/Dropbox/MyData/_PhD/_Blogposts/18_bundestag")
 vote_table <- readRDS(file='Data_vote.X.person.RDS')
 person_table <- readRDS(file='Data_persons.RDS')
 titles <- readRDS(file='Data_votes.RDS')
@@ -16,11 +17,10 @@ grouping <- person_table$Fraktion
 # -------------- Preprocess Data --------------
 
 NAs <- apply(vote_table, 2, function(x) mean(is.na(x)))
-#barplot(NAs)
 vote_table[is.na(vote_table)] <- -1 # replace missing values by new category (standard approach)
 
 # make everything that is not yes/no to third category
-vote_table[vote_table==3] <- -1 
+vote_table[vote_table==3] <- -1
 vote_table[vote_table==4] <- -1
 vote_table[vote_table==5] <- -1
 
@@ -54,19 +54,19 @@ corm <- cor(vote_table[,1:n])
 
 set.seed(1)
 # takes around 20 min to draw
-jpeg('bundestag_cor_full.jpg', width = 1300, height = 1000, units='px')
-Q <- qgraph(corm, layout='spring', groups = grouping[1:n], 
-       minimum=0, maxmimum=1, colors = colors, labels=FALSE, legend=TRUE, 
-       legend.cex=1.3, vsize=.85, esize=3)
+jpeg('Figures/bundestag_cor_full.jpg', width = 1300, height = 1000, units='px')
+Q <- qgraph(corm, layout='spring', groups = grouping[1:n],
+            minimum=0, maxmimum=1, colors = colors, labels=FALSE, legend=TRUE,
+            legend.cex=1.3, vsize=.85, esize=3)
 dev.off()
 
 
 # ----- Static Correlation Graph with subset -----
 
 set.seed(1)
-jpeg('bundestag_cor_ss_names.jpg', width = 1300, height = 1000, units='px')
-Q2 <- qgraph(corm[k_ind, k_ind], layout='spring', groups = grouping[1:n][k_ind], 
-             minimum=0, maxmimum=1, colors = colors, labels=TRUE, legend=TRUE,
+jpeg('Figures/bundestag_cor_ss_names.jpg', width = 1300, height = 1000, units='px')
+Q2 <- qgraph(corm[k_ind, k_ind], layout='spring', groups = grouping[1:n][k_ind],
+             minimum=0, Maxmimum=1, colors = colors, labels=TRUE, legend=TRUE,
              nodeNames=full_names[1:n][k_ind], legend.mode="style2",
              legend.cex=.9, vsize=3, esize=5)
 dev.off()
@@ -85,11 +85,11 @@ for(i in 1:length(t_seq)) {
 }
 
 # plot jpgs (on a new mac book pro (2016), takes around 20 min per figure)
-jpeg("movie_cor/foo%02d.jpg", 
+jpeg("Figures/movie_cor/foo%02d.jpg",
      width = 1300, height = 1000, units = "px")
 for(i in 1:length(t_corm)) { # reverse time order: past -> future
   qgraph(t_corm[[i]], groups=grouping[1:n], color=colors, labels=FALSE,
-         vsize=.9, esize=.05, legend.cex=1.3)  
+         vsize=.9, esize=.05, legend.cex=1.3)
   text(0,-1.2, date_vec[i], cex=3)
 }
 dev.off()
@@ -100,10 +100,10 @@ system("convert -delay 40 movie_cor/*jpg bundestag_cor.gif")
 # -------------- 2.2) Time-Varying SUBSET Correlation Graph --------------
 
 # plot jpgs (on a new mac book pro (2016), takes around 20 min per figure)
-jpeg("movie_cor_ss/foo%02d.jpg", 
+jpeg("Figures/movie_cor_ss/foo%02d.jpg",
      width = 1300, height = 1000, units = "px")
-for(i in 1:time_vec) { 
-  qgraph(t_corm[[i]][k_ind, k_ind], layout=Q2$layout, groups = grouping[1:n][k_ind], 
+for(i in 1:time_vec) {
+  qgraph(t_corm[[i]][k_ind, k_ind], layout=Q2$layout, groups = grouping[1:n][k_ind],
          minimum=0, maxmimum=1, colors = colors, labels=TRUE, legend=TRUE,
          nodeNames=full_names[1:n][k_ind], legend.mode="style2",
          legend.cex=.9, vsize=3, esize=5)
@@ -121,12 +121,12 @@ t_all <- unlist(lapply(t_corm, mean))
 t_parties <- list()
 for(i in 1:4) {
   t_parties[[i]] <- unlist(lapply(t_corm, function(x) {
-    mean(x[grouping[1:n]==parties[i], grouping[1:n]==parties[i]]) 
+    mean(x[grouping[1:n]==parties[i], grouping[1:n]==parties[i]])
   }))
 }
 
 # plot
-jpeg('bundestag_agreement_time.jpg', width = 800, height = 700, units='px')
+jpeg('Figures/bundestag_agreement_time.jpg', width = 800, height = 700, units='px')
 plot.new()
 par(mar=c(8,6,1,1))
 plot.window(ylim=c(-.2, 1), xlim=c(1,time_vec))
@@ -143,21 +143,20 @@ dev.off()
 # -------------- 4) Unique Agreement Graph --------------
 
 # (zoom in on k-subset)
+## fit unregularized GGM
+# as we look at the population, we don't want any regularization which we switch of with LambdaSeq = 0;
 
-## fit unregularized GGM 
-# as we look at the population, we don't want any regularization and do not have an assumption about the minimum effect size we can detect as a function of n, p, d
-# in order to bring regularization close to 0 and to render the thresholding ineffective, 
-# we set gamma to a large negative value (no regularization), and the weights for each observation to a large number (high threshold)
-# but please note: this is a dirty hack ;)
-
-fit <- mgmfit(vote_table[,1:n], rep('g', n), rep(1, n), d=1, gam=-10^5, 
-              lambda.sel = 'EBIC', weights = rep(10^5, nrow(vote_table)))
+fit <- mgm(data = vote_table[,1:n],
+           rep('g', n), rep(1, n),
+           lambdaSeq = 0,
+           lambdaSel = 'EBIC',
+           threshold = "none")
 
 set.seed(1)
-jpeg('bundestag_cond_ss_names.jpg', width = 1300, height = 1000, units='px')
-qgraph(fit$wadj[k_ind,k_ind], layout=Q2$layout, groups = grouping[1:n][k_ind], 
-       minimum=0, maxmimum=1, colors = colors, labels=TRUE, legend=TRUE, 
-       legend.cex=.9, vsize=3, esize=5, legend.mode='style2', 
+jpeg('Figures/bundestag_cond_ss_names.jpg', width = 1300, height = 1000, units='px')
+qgraph(fit$pairwise$wadj[k_ind,k_ind], layout=Q2$layout, groups = grouping[1:n][k_ind],
+       minimum=0, Maxmimum=1, colors = colors, labels=TRUE, legend=TRUE,
+       legend.cex=.9, vsize=3, esize=5, legend.mode='style2',
        nodeNames=full_names[1:n][k_ind], edge.color=fit$edgecolor[k_ind,k_ind])
 dev.off()
 

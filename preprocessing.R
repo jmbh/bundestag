@@ -1,4 +1,4 @@
-# jonashaslbeck@gmail.com
+# jonashaslbeck@protonmail.com; July 28th, 2023
 
 library(gdata)
 library(plyr)
@@ -10,7 +10,7 @@ library(huge)
 # Time Period: 26.11.2014 - 14.04.2016
 
 
-##### Part 1 - Recover the data ##### 
+##### Part 1 - Recover the data #####
 
 ## get title data (titles and dates of all bills collected in one file)
 # !!! SET WORKING DIRECTORY !!!
@@ -18,7 +18,7 @@ titles <- read.table('file_and_vote.csv', sep=',', header=TRUE)
 
 ## get voting data (downloaded from above URL)
 # !!! SET WORKING DIRECTORY / data !!!
-files <- list.files(getwd())
+files <- list.files('Data')
 files <- files[grepl('.xls',files)]
 
 # prepare windows batch code for xls to csv conversion
@@ -43,9 +43,7 @@ for(i in 1:length(files_csv)) {
 }
 
 
-##### Part 2 - Transform Data ##### 
-
-setwd("/Users/jmb/Dropbox/MyData/_PhD/_Blogposts/18_bundestag")
+##### Part 2 - Transform Data #####
 
 # three data parts:
 # a) mapping person <-> Fraktion
@@ -113,13 +111,13 @@ unique_persons <- unique(paste(person_table$Name, person_table$Vorname, sep = '_
 vote_table <- matrix(NA, length(unique_votes), nrow(person_table))
 
 for(p in 1:length(unique_persons)) {
-  
+
   print(p)
   # subset person
   s_p <- subset(df_comb, Name==person_table$Name[p] & Vorname==person_table$Vorname[p])
-  
+
   for(v in 1:length(unique_votes)) {
-    
+
     vote <- s_p[paste(s_p$Wahlperiode, s_p$Sitzungnr, s_p$Abstimmnr, sep = '_')==unique_votes[v],]
     if(nrow(vote)==0) next
     resp <- NA
@@ -128,10 +126,10 @@ for(p in 1:length(unique_persons)) {
     if(vote$Enthaltung==1) resp <- 3
     if(vote$ungultig==1) resp <- 4
     if(vote$nichtabgegeben==1) resp <- 5
-    
+
     vote_table[v,p] <- resp
-    
-  }  
+
+  }
 }
 
 # save all preprocessed data
